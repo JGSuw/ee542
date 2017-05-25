@@ -1,0 +1,3 @@
+[submodule "stm32-arduino"]
+	path = stm32-arduino
+	url = https://github.com/redbear/stm32-arduino
