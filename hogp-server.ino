@@ -146,6 +146,7 @@ static advParams_t adv_params = {
 };
 
 // BLE peripheral advertising data
+// TODO: rework adv_data according to software specification document
 static uint8_t adv_data[] = {
   0x02,
   BLE_GAP_AD_TYPE_FLAGS,
@@ -164,6 +165,7 @@ static uint8_t scan_response[] = {
 };
 
 // Characteristic value handle
+// TODO: add service handle for HID Service
 static uint16_t battery_service_handle = 0x0000;
 static uint16_t device_information_service_handle = 0x0000;
 static uint16_t hid_information_characteristic_handle = 0x0000;
@@ -232,6 +234,7 @@ void deviceDisconnectedCallback(uint16_t handle) {
  *
  * @retval  Length of current attribute value.
  */
+// TODO: Rewrite this method for our application
 uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buffer_size) {   
   uint8_t characteristic_len = 0;
 
@@ -258,6 +261,9 @@ uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buff
   }
   return characteristic_len;
 }
+
+// TODO: implementation of gattWriteCallback
+
 //
 ///**
 // * @brief Callback for writting event.
