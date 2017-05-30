@@ -67,16 +67,17 @@ adc_meas_t adcRead (void)
 
 uint8_t queueReceive (adc_meas_t values[])
 {
-  int i = 0;
-
-  while (output_queue.buffer[i].channel_A != NULL)
-  {
+  // GUARD AGAINST BUFFER OVERFLOW - MAKE SURE VALUES IS THE RIGHT SIZE
+  int i;
+  for (i = 0; i < index; i++ ) {
     values[i].channel_A = output_queue.buffer[i].channel_A;
     values[i].channel_B = output_queue.buffer[i].channel_B;
     values[i].channel_A_raw = output_queue.buffer[i].channel_A_raw;
     values[i].channel_B_raw = output_queue.buffer[i].channel_B_raw;
+    // TODO copy the data
+  }
+  index = 0;
 
-    i++;
   }
 
 return i;  
