@@ -4,11 +4,11 @@
 #define ADC_SPI_TRANSACTION_SIZE 2
 
 static adc_meas_t measurement;
-static adc_meas_queue_t output_queue;
+static adc_meas_t output_queue[BUFFER_SIZE];
 
-static uint8_t slave_pin;
+static uint8_t slave_pin = 4;
 
-static int index = 0;
+static int buffer_head = 0;
 
 uint8_t adc_read_channel_1 = {byte1, byte2};
 
@@ -16,9 +16,9 @@ uint8_t adc_read_channel_2 = {byte1, byte2}
 
 int queueInsert (adc_meas_t entry)
 {
-  if (index < output_queue.queue_size)
+  if (buffer_head < BUFFER_SIZE)
   {
-    output_queue.buffer[index++] = entry;
+    output_queue[buffer_head++] = entry;
     return 0;
   }
 
@@ -27,10 +27,12 @@ int queueInsert (adc_meas_t entry)
 
 bool queueFull (void)
 {
-  if (index == output_queue.queue_size)
-  return true;
-  else
-  return false;
+  if (buffer_head == BUFFER_SIZE) {
+	  return true;
+  }
+  else {  
+	return false;
+  }
 }
 
 // TODO
@@ -69,14 +71,14 @@ uint8_t queueReceive (adc_meas_t values[])
 {
   // GUARD AGAINST BUFFER OVERFLOW - MAKE SURE VALUES IS THE RIGHT SIZE
   int i;
-  for (i = 0; i < index; i++ ) {
+  for (i = 0; i < buffer_head; i++ ) {
     values[i].channel_A = output_queue.buffer[i].channel_A;
     values[i].channel_B = output_queue.buffer[i].channel_B;
     values[i].channel_A_raw = output_queue.buffer[i].channel_A_raw;
     values[i].channel_B_raw = output_queue.buffer[i].channel_B_raw;
     // TODO copy the data
   }
-  index = 0;
+  buffer_head = 0;
 
   }
 
