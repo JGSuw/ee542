@@ -1,5 +1,6 @@
 #ifndef EMG_HEADER
 #define EMG_HEADER
+
 #include <stdbool.h>
 
 #define BUFFER_SIZE 8
