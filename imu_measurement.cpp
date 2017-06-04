@@ -3,6 +3,8 @@
 #include "spi.h"
 #include <SparkFunLSM6DS3.h>
 
+#define TASK_PERIOD_US  1000
+
 
 static imu_meas_t imu_avg;
 static imu_meas_t measurement; //instance used by read() to store data from LSM6DS3
@@ -40,13 +42,9 @@ void configureIMU()
 }
 
 void imu_measurement_task() {
-  // if it is time to sample
-    // then sample
-  if (true) {
-    read();
-    if (buffer_head == IMU_BUFFER_SIZE) {
-      averageReadings();
-    }
+  read();
+  if (buffer_head == IMU_BUFFER_SIZE) {
+    averageReadings();
   }
 }
 

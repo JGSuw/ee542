@@ -73,11 +73,7 @@ uint8_t adcQueueReceive (adc_meas_t values[]) {
 
 // Task implementaiton
 void emg_measurement_task() {
-  // TODO if its time to run
-    // sample the channels and put them in the queue
-  if (true) {
-    measurement = adcRead();
-    adcQueueInsert(measurement);
-  }
+  measurement = adcRead();
+  adcQueueInsert(measurement);
 }
 
