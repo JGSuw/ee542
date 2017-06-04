@@ -20,20 +20,25 @@ static uint8_t delta_x;
 static uint8_t delta_y;
 
 void mouse_displacement_task() {
-	//get measurements
-	measured_accel[0] = getX();
-	measured_accel[1] = getX();
-	measured_accel[2] = getX();
-	measured_rotation[0] = getRollRate();
-	measured_rotation[1] = getPitchRate();
-	measured_rotation[2] = getYawRate();
+  // if it is time to sample
+    // then sample
+  if (true) {
+    configureIMU()
+    //get measurements
+    measured_accel[0] = getX();
+    measured_accel[1] = getX();
+    measured_accel[2] = getX();
+    measured_rotation[0] = getRollRate();
+    measured_rotation[1] = getPitchRate();
+    measured_rotation[2] = getYawRate();
 
-	coordinateTransformation(measured_accel, measured_rotation);
-	// calculateCentripetalAccel(transformed_accel, transformed_rotation);
-	resolveAxes(transformed_accel);
-	// resolveAxes(calculateCentripetalAccel);
-	delta_x = mapXDisplacement();
-	delta_y = mapYDisplacement();
+    //transform coordinates
+    coordinateTransformation(measured_accel, measured_rotation);
+    // calculateCentripetalAccel(transformed_accel, transformed_rotation);
+    resolveAxes(transformed_accel);// resolveAxes(calculateCentripetalAccel);
+    delta_x = mapXDisplacement();
+    delta_y = mapYDisplacement();
+    }
   }
 
 void coordinateTransformation(float[] accel, float[] rotate) {
@@ -52,16 +57,14 @@ void coordinateTransformation(float[] accel, float[] rotate) {
 
 void resolveAxes(float[] gravity) {
   calculated_roll_angle = atan(-1 * gravity[0] / gravity[1]) * 180 / PI;
-  calculated_pitch_angle = atan(gravity[1] / sqrt(pow(gravity[0],2) + pow(gravity[2],2))) * 180 / PI;
+  calculated_pitch_angle = atan(gravity[1] * sqrt(pow(gravity[0],2) + pow(gravity[2],2))) * 180 / PI;
 }
 
 void mapXDisplacement() {
-	// TODO: Put this into bins, account of deadzone as well.
   delta_x = (uint8_t)(max_x_displacement * calculated_roll_angle / RANGE);
 }
 
 void mapYDisplacement() {
-	// TODO: put this into bins, account for deadzone as well.
   delta_y = (uint8_t)(max_y_displacement * calculated_pitch_angle / RANGE);
 }
 
