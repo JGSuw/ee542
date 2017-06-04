@@ -1,7 +1,6 @@
 #include <stdbool.h>
+#include <Mouse.h>
 #include "hid_mouse_task.h"
-
-STARTUP(Mouse.begin());
 
 #define MOUSE_UPDATE_PERIOD_MS 8
 #define SCREEN_SIZE_X 1920

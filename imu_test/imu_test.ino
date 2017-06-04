@@ -13,6 +13,7 @@ void setup() {
   // put your setup code here, to run once:
   configureIMU();
   Serial.begin(57600);
+  SPI1.setClockSpeed(1,MHZ);
 }
 
 void loop() {
