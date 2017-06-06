@@ -7,25 +7,25 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 
 #define TEST_PERIOD 8
 
-#define TEST_SLEEP_MS 10
+#define TEST_SLEEP_MS 1
 
 adc_meas_t buff[ADC_BUFFER_SIZE];
 
 void setup() {
-  Serial.begin(57600);
+  Serial.begin(115200);
+  SPI1.begin(6);
 }
 
 void loop() {
-
   emg_measurement_task();
-
+  delay(TEST_SLEEP_MS);
   if (adcQueueFull()) {
     adcQueueReceive(buff);
     for(int i = 0; i < ADC_BUFFER_SIZE; i++) {
       Serial.print(buff[i].channel_A);
-      Serial.print(" ");
-      Serial.print(buff[i].channel_B);
-      Serial.println();
+      if( i != ADC_BUFFER_SIZE-1) {
+        Serial.print(',');
+      } else { Serial.print('\n');}
     }
   }
 }
