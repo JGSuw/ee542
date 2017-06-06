@@ -3,27 +3,28 @@
 #include "emg_measurement.h"
 #include "button_state_mapping.h"
 
-#define BUFFER_SIZE = 50
-#define CHANNEL_A = 0
-#define CHANNEL_A_RAW = 1
-#define CHANNEL_B = 2
-#define CHANNEL_B_RAW = 3
+#define BUFFER_SIZE 50
+#define CHANNEL_A  0
+#define CHANNEL_A_RAW  1
+#define CHANNEL_B  2
+#define CHANNEL_B_RAW  3
 
 static uint8_t buffer_head;
 static bool button_state[2];
 static adc_meas_t input_buffer[BUFFER_SIZE];
-static uint16_t threshold[2];
+static uint16_t threshold[2] = {200, 200};
+
+bool defineButtonState(uint16_t, uint16_t);
 
 void updateBuffer(){
-  if (adcQueueFull()){
-    adc_meas_t temp[8];
-    int count = 0;
-    
-    count = adcQueueReceive(temp);    
-    
-    for (int i = 0; i < count; i++) {
-      input_buffer[buffer_head++] = temp[i];
-    }
+  adc_meas_t temp[8];
+  int count = 0;
+  
+  count = adcQueueReceive(temp);    
+  
+  for (int i = 0; i < count; i++) {
+    input_buffer[buffer_head] = temp[i];
+    buffer_head = (buffer_head + 1) % BUFFER_SIZE;
   }
 }
 
@@ -50,6 +51,8 @@ uint16_t averageChannel(int channel){// channel can be 1 (channel A raw) or 3 (c
 void button_state_mapping_task(){
   uint16_t average_channel_A;
   uint16_t average_channel_B;
+
+  updateBuffer();
     
   average_channel_A = averageChannel(1);
   average_channel_B = averageChannel(2);
@@ -87,8 +90,10 @@ bool getRMB(){ // channel A
   return button_state[0];
 }
 
-void setTreshole(uint16_t threshole_channel_A, uint16_t treshole_channel_B){
-  threshold[0] = threshole_channel_A;
-  threshold[1] = threshole_channel_B;
-} 
+void debug_buffer(adc_meas_t * buff) {
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    buff[i] = input_buffer[i];
+  }
+}
+
 

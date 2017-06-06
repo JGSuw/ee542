@@ -13,7 +13,6 @@ static adc_meas_t output_queue[ADC_BUFFER_SIZE];
 static uint8_t slave_pin = 6;
 static int buffer_head = 0;
 static uint8_t adc_read_channel_A[] = {0b01101000, 0x00};
-//static uint8_t adc_read_channel_A[] = {0b00010110, 0x00};
 static uint8_t adc_read_channel_B[] = {0b01111000, 0x00};
 
 int adcQueueInsert (adc_meas_t entry) {

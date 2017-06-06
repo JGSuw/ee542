@@ -53,7 +53,6 @@ void read()
   // Configure slave pin
   SPI1.begin(slave_pin);
   // Set bit order for SPI1 interface
-  SPI1.setClockSpeed(1,MHZ);
   SPI1.setBitOrder(MSBFIRST);
   // Set data mode of SPI1 interface
   SPI1.setDataMode(SPI_MODE3);

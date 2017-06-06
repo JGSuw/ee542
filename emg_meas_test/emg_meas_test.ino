@@ -1,4 +1,13 @@
 
+/*
+ * Author: Joseph Sullivan
+ * Course: EE542
+ * 
+ * This is a test of the emg measurement subsystem. The device
+ * is sampled at 1 kilohertz, and every 8 milliseconds the 
+ * buffered data is printed to the console via csv.
+ */
+
 #if defined(ARDUINO) 
 SYSTEM_MODE(SEMI_AUTOMATIC); 
 #endif
