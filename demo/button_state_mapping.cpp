@@ -12,7 +12,7 @@
 static uint8_t buffer_head;
 static bool button_state[2];
 static adc_meas_t input_buffer[BUFFER_SIZE];
-static uint16_t threshold[2] = {200, 200};
+static uint16_t threshold[2] = {250, 250};
 
 bool defineButtonState(uint16_t, uint16_t);
 
@@ -83,11 +83,11 @@ void initializedBuffer(){
 }
 
 bool getLMB(){ // channel B
-  return button_state[1];
+  return button_state[0];
 }
 
 bool getRMB(){ // channel A
-  return button_state[0];
+  return button_state[1];
 }
 
 void debug_buffer(adc_meas_t * buff) {

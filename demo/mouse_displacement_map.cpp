@@ -4,9 +4,13 @@
 #include "imu_measurement.h"
 
 #define ARRAY_LENGTH 3
-#define RANGE 45
+#define RANGE 15.
 #define PI 3.14159265
-#define DISPLACEMENT_QUANTIZATION_INTERVAL 3
+#define DISPLACEMENT_QUANTIZATION_INTERVAL 1
+#define DEADZONE 6
+#define ROLL_OFFSET 3.
+#define PITCH_OFFSET -10.
+
 
 static float measured_accel[ARRAY_LENGTH];
 static float transformed_accel[ARRAY_LENGTH];
@@ -15,8 +19,8 @@ static float transformed_rotation[ARRAY_LENGTH];
 static float calculated_centripetal_accel[ARRAY_LENGTH];
 static float calculated_pitch_angle;
 static float calculated_roll_angle;
-static const int max_y_displacement = 15; // tune this value
-static const int max_x_displacement = 15; // tune this value
+static const int max_y_displacement = 10; // tune this value
+static const int max_x_displacement = 10; // tune this value
 static float delta_x;
 static float delta_y;
 
@@ -44,9 +48,9 @@ void mouseDisplacementTask() {
 
 
 void coordinateTransformation(float * accel, float * rotate) {
-  transformed_accel[0] = accel[0];
-  transformed_accel[1] = accel[2];
-  transformed_accel[2] = accel[1];
+  transformed_accel[0] = -accel[1];
+  transformed_accel[1] = -accel[2];
+  transformed_accel[2] = accel[0];
 
   transformed_rotation[0] = rotate[0];
   transformed_rotation[1] = rotate[2];
@@ -63,11 +67,11 @@ void resolveAxes(float * gravity) {
 }
 
 void mapYDisplacement() {
-  delta_y = (max_x_displacement * calculated_roll_angle / RANGE);
+  delta_y = (max_x_displacement * (calculated_roll_angle - ROLL_OFFSET) / RANGE);
 }
 
 void mapXDisplacement() {
-  delta_x = (max_y_displacement * calculated_pitch_angle / RANGE);
+  delta_x = (max_y_displacement * (calculated_pitch_angle - PITCH_OFFSET) / RANGE);
 }
 
 int getXDisplacement() {
