@@ -66,8 +66,46 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 #define PNP_ID_CHARACTERISTIC_MAX_LEN                     7
 #define HID_INFORMATION_CHARACTERISTIC_MAX_LEN            4
 #define HID_CONTROL_POINT_CHARACTERISTIC_MAX_LEN          1
-#define REPORT_MAP_VALUE_CHARACTERISTIC_MAX_LEN           1
-#define BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN    1
+#define REPORT_MAP_VALUE_CHARACTERISTIC_MAX_LEN           64
+#define BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN    3
+
+// from: https://github.com/jpbrucker/BLE_HID/blob/master/BLE_HID/USBHID_Types.h
+/* HID Class Report Descriptor */
+/* Short items: size is 0, 1, 2 or 3 specifying 0, 1, 2 or 4 (four) bytes */
+/* of data as per HID Class standard */
+
+/* Main items */
+#define IN(size)             (0x80 | size)
+#define OUT(size)            (0x90 | size)
+#define FEATURE(size)           (0xb0 | size)
+#define COLLECTION(size)        (0xa0 | size)
+#define END_COLLECTION(size)    (0xc0 | size)
+
+/* Global items */
+#define USAGE_PAGE(size)        (0x04 | size)
+#define LOGICAL_MINIMUM(size)   (0x14 | size)
+#define LOGICAL_MAXIMUM(size)   (0x24 | size)
+#define PHYSICAL_MINIMUM(size)  (0x34 | size)
+#define PHYSICAL_MAXIMUM(size)  (0x44 | size)
+#define UNIT_EXPONENT(size)     (0x54 | size)
+#define UNIT(size)              (0x64 | size)
+#define REPORT_SIZE(size)       (0x74 | size)
+#define REPORT_ID(size)         (0x84 | size)
+#define REPORT_COUNT(size)      (0x94 | size)
+#define PUSH(size)              (0xa4 | size)
+#define POP(size)               (0xb4 | size)
+
+/* Local items */
+#define USAGE(size)                 (0x08 | size)
+#define USAGE_MINIMUM(size)         (0x18 | size)
+#define USAGE_MAXIMUM(size)         (0x28 | size)
+#define DESIGNATOR_INDEX(size)      (0x38 | size)
+#define DESIGNATOR_MINIMUM(size)    (0x48 | size)
+#define DESIGNATOR_MAXIMUM(size)    (0x58 | size)
+#define STRING_INDEX(size)          (0x78 | size)
+#define STRING_MINIMUM(size)        (0x88 | size)
+#define STRING_MAXIMUM(size)        (0x98 | size)
+#define DELIMITER(size)             (0xa8 | size)
 
 /******************************************************
  *               Variable Definitions
@@ -146,15 +184,14 @@ static advParams_t adv_params = {
 };
 
 // BLE peripheral advertising data
-// TODO: rework adv_data according to software specification document
 static uint8_t adv_data[] = {
   0x02,
   BLE_GAP_AD_TYPE_FLAGS,
-  BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE,   
+  BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE, 
   
   0x11,
-  BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_COMPLETE,
-  0x1e, 0x94, 0x8d, 0xf1, 0x48, 0x31, 0x94, 0xba, 0x75, 0x4c, 0x3e, 0x50, 0x00, 0x00, 0x3d, 0x71 
+  BLE_GAP_AD_TYPE_16BIT_SERVICE_UUID_COMPLETE,
+  0x00, 0x00, 0x11, 0x24, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB      
 };
 
 // BLE peripheral scan respond data
@@ -165,21 +202,48 @@ static uint8_t scan_response[] = {
 };
 
 // Characteristic value handle
-// TODO: add service handle for HID Service
-static uint16_t battery_service_handle = 0x0000;
-static uint16_t device_information_service_handle = 0x0000;
+static uint16_t battery_level_characteristic_handle = 0x0000;
+static uint16_t pnp_id_characteristic_handle = 0x0000;
 static uint16_t hid_information_characteristic_handle = 0x0000;
 static uint16_t hid_control_point_characteristic_handle = 0x0000;
 static uint16_t report_map_characteristic_handle = 0x0000;
 static uint16_t mouse_input_report_characteristic_handle = 0x0000;
 
 // Buffer of characterisitc value.
-static uint8_t battery_service_data[BATTERY_LEVEL_CHARACTERISTIC_MAX_LEN] = { 0x5A };
-static uint8_t device_information_service_data[PNP_ID_CHARACTERISTIC_MAX_LEN] = { 0x01 0xFF 0xFF 0xAA 0xAA 0x00 0x01 };
-static uint8_t hid_information_characteristic_data[HID_INFORMATION_CHARACTERISTIC_MAX_LEN] = { 0x01 0x11 0x00 0x02 };
-static uint8_t hid_control_point_characteristic_data[HID_CONTROL_POINT_CHARACTERISTIC_MAX_LEN] = { 0x01 0x11 0x00 0x02 };
-static uint8_t report_map_characteristic_data[REPORT_MAP_VALUE_CHARACTERISTIC_MAX_LEN] = { 0x03 };
-static uint8_t mouse_input_report_characteristic_handle[BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN] = { 0x03 };
+static uint8_t battery_level_characteristic_data[BATTERY_LEVEL_CHARACTERISTIC_MAX_LEN] = { 0x5A };
+static uint8_t pnp_id_characteristic_data[PNP_ID_CHARACTERISTIC_MAX_LEN] = { 0x01, 0xFF, 0xFF, 0xAA, 0xAA, 0x00, 0x01 };
+static uint8_t hid_information_characteristic_data[HID_INFORMATION_CHARACTERISTIC_MAX_LEN] = { 0x01, 0x11, 0x00, 0x02 };
+static uint8_t hid_control_point_characteristic_data[HID_CONTROL_POINT_CHARACTERISTIC_MAX_LEN] = { 0x00 };
+// from: https://github.com/jpbrucker/BLE_HID/blob/master/BLE_HID/MouseService.h
+static uint8_t report_map_characteristic_data[REPORT_MAP_VALUE_CHARACTERISTIC_MAX_LEN] = { 
+    USAGE_PAGE(1),      0x01,         // Generic Desktop
+    USAGE(1),           0x02,         // Mouse
+    COLLECTION(1),      0x01,         // Application
+    USAGE(1),           0x01,         //  Pointer
+    COLLECTION(1),      0x00,         //  Physical
+    USAGE_PAGE(1),      0x09,         //   Buttons
+    USAGE_MINIMUM(1),   0x01,
+    USAGE_MAXIMUM(1),   0x03,
+    LOGICAL_MINIMUM(1), 0x00,
+    LOGICAL_MAXIMUM(1), 0x01,
+    REPORT_COUNT(1),    0x02,         //   3 bits (Buttons)
+    REPORT_SIZE(1),     0x01,
+    IN(1),              0x02,         //   Data, Variable, Absolute
+    REPORT_COUNT(1),    0x01,         //   5 bits (Padding)
+    REPORT_SIZE(1),     0x05,
+    IN(1),              0x01,         //   Constant
+    USAGE_PAGE(1),      0x01,         //   Generic Desktop
+    USAGE(1),           0x30,         //   X
+    USAGE(1),           0x31,         //   Y
+    LOGICAL_MINIMUM(1), 0x81,         //   -127
+    LOGICAL_MAXIMUM(1), 0x7f,         //   127
+    REPORT_SIZE(1),     0x08,         //   Three bytes
+    REPORT_COUNT(1),    0x03,
+    IN(1),              0x06,         //   Data, Variable, Relative
+    END_COLLECTION(0),
+    END_COLLECTION(0),
+  };
+static uint8_t mouse_input_report_characteristic_data[BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN] = { 0x02, 0x32, 0x23 };
 
 // Timer task.
 //static btstack_timer_source_t characteristic2;
@@ -200,7 +264,7 @@ void deviceConnectedCallback(BLEStatus_t status, uint16_t handle) {
       Serial.println("Device connected!");
       Serial.print("Connection handle: ");
       Serial.println(handle, HEX);
-      //conn_handle = handle;
+      conn_handle = handle;
       break;
     case BLE_STATUS_CONNECTION_ERROR:
       Serial.println("Connection error!");
@@ -219,7 +283,7 @@ void deviceDisconnectedCallback(uint16_t handle) {
   Serial.println("Disconnected.");
   Serial.print("Connection handle: ");
   Serial.println(handle, HEX);
- // conn_handle = 0xFFFF;
+  conn_handle = 0xFFFF;
 }
 
 /**
@@ -234,99 +298,88 @@ void deviceDisconnectedCallback(uint16_t handle) {
  *
  * @retval  Length of current attribute value.
  */
-// TODO: Rewrite this method for our application
 uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buffer_size) {   
   uint8_t characteristic_len = 0;
 
   Serial.print("Read value handler: ");
   Serial.println(value_handle, HEX);
 
-  swich 
+  if (battery_level_characteristic_handle == value_handle){
+    Serial.println("Battery level characteristic read:");
+    memcpy(buffer, battery_level_characteristic_data, BATTERY_LEVEL_CHARACTERISTIC_MAX_LEN);
+    characteristic_len = BATTERY_LEVEL_CHARACTERISTIC_MAX_LEN;
+  } 
+  else if (pnp_id_characteristic_handle == value_handle){
+    Serial.println("PNP ID characteristic read:");
+    memcpy(buffer, pnp_id_characteristic_data, PNP_ID_CHARACTERISTIC_MAX_LEN);
+    characteristic_len = PNP_ID_CHARACTERISTIC_MAX_LEN;
+  } 
+  else if (hid_information_characteristic_handle == value_handle){
+    Serial.println("HID information characteristic read:");
+    memcpy(buffer, hid_information_characteristic_data, HID_INFORMATION_CHARACTERISTIC_MAX_LEN);
+    characteristic_len = HID_INFORMATION_CHARACTERISTIC_MAX_LEN;
+  } 
+  else if (report_map_characteristic_handle == value_handle){
+    Serial.println("HID information characteristic read:");
+    memcpy(buffer, hid_information_characteristic_data, HID_INFORMATION_CHARACTERISTIC_MAX_LEN);
+    characteristic_len = HID_INFORMATION_CHARACTERISTIC_MAX_LEN;
+  } 
+  else if (mouse_input_report_characteristic_handle == value_handle){
+    Serial.println("Mouse input report characteristic read:");
+    memcpy(buffer, mouse_input_report_characteristic_data, BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN);
+    characteristic_len = BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN;
+  } 
   
-  if (character1_handle == value_handle) {   // Characteristic value handle.
-    Serial.println("Character1 read:");
-    memcpy(buffer, characteristic1_data, CHARACTERISTIC1_MAX_LEN);
-    characteristic_len = CHARACTERISTIC1_MAX_LEN;
-  }
-  else if (character1_handle+1 == value_handle) {   // Client Characteristic Configuration Descriptor Handle.
-    Serial.println("Character1 cccd read:");
-    uint8_t buf[2] = { 0x01,0x00 };
-    memcpy(buffer, buf, 2);
-    characteristic_len = 2;
-  }
-  else if (character2_handle == value_handle) {
-    Serial.println("Character2 read:");
-    memcpy(buffer, characteristic2_data, CHARACTERISTIC2_MAX_LEN);
-    characteristic_len = CHARACTERISTIC2_MAX_LEN;
-  }
   return characteristic_len;
 }
 
-// TODO: implementation of gattWriteCallback
+/**
+ * @brief Callback for writting event.
+ *
+ * @param[in]  value_handle  
+ * @param[in]  *buffer       The buffer pointer of writting data.
+ * @param[in]  size          The length of writting data.   
+ *
+ * @retval 
+ */
+int gattWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size) {
+  Serial.print("Write value handler: ");
+  Serial.println(value_handle, HEX);
 
-//
-///**
-// * @brief Callback for writting event.
-// *
-// * @param[in]  value_handle  
-// * @param[in]  *buffer       The buffer pointer of writting data.
-// * @param[in]  size          The length of writting data.   
-// *
-// * @retval 
-// */
-//int gattWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size) {
-//  Serial.print("Write value handler: ");
-//  Serial.println(value_handle, HEX);
-//
-//  if (character1_handle == value_handle) {
-//    memcpy(characteristic1_data, buffer, size);
-//    Serial.print("Characteristic1 write value: ");
-//    for (uint8_t index = 0; index < size; index++) {
-//      Serial.print(characteristic1_data[index], HEX);
-//      Serial.print(" ");
-//    }
-//    Serial.println(" ");
-//  }
-//  else if (character1_handle+1 == value_handle) {
-//    Serial.print("Characteristic1 cccd write value: ");
-//    for (uint8_t index = 0; index < size; index++) {
-//      Serial.print(buffer[index], HEX);
-//      Serial.print(" ");
-//    }
-//    Serial.println(" ");
-//  }
-//  else if (character2_handle == value_handle) {
-//    memcpy(characteristic2_data, buffer, size);
-//    Serial.print("Characteristic2 write value: ");
-//    for (uint8_t index = 0; index < size; index++) {
-//      Serial.print(characteristic2_data[index], HEX);
-//      Serial.print(" ");
-//    }
-//    Serial.println(" ");
-//  }
-//  return 0;
-//}
-//
-///**
-// * @brief Timer task for sending notify of characteristic to client.
-// *
-// * @param[in]  *ts   
-// *
-// * @retval None
-// */
-//static void characteristic2_notify(btstack_timer_source_t *ts) {
-//  Serial.println("characteristic2_notify");
-//
-//  characteristic2_data[CHARACTERISTIC2_MAX_LEN-1]++;
-//  ble.sendNotify(character2_handle, characteristic2_data, CHARACTERISTIC2_MAX_LEN);
-//  // Restart timer.
-//  ble.setTimer(ts, 10000);
-//  ble.addTimer(ts);
-//}
+  if (hid_control_point_characteristic_handle == value_handle) {
+    memcpy(hid_control_point_characteristic_data, buffer, size);
+    Serial.print("HID control point characteristic write value: ");
+    for (uint8_t index = 0; index < size; index++) {
+      Serial.print(hid_control_point_characteristic_data[index], HEX);
+      Serial.print(" ");
+    }
+    Serial.println(" ");
+  }
+  return 0;
+}
+
+/**
+ * @brief Timer task for sending notify of characteristic to client.
+ *
+ * @param[in]  *ts   
+ *
+ * @retval None
+ */
+static void mouse_input_report_characteristic_notify(btstack_timer_source_t *ts) {
+  Serial.println("Mouse input report characteristic - notify");
+
+  mouse_input_report_characteristic_data[BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN-1]++;
+  ble.sendNotify(mouse_input_report_characteristic_handle, mouse_input_report_characteristic_data, BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN);
+  // Restart timer.
+  ble.setTimer(ts, 10000);
+  ble.addTimer(ts);
+}
 
 /**
  * @brief Setup.
  */
+
+SerialDebugOutput debugOutput(115200, DEBUG_LEVEL);
 
 void setup() {
   Serial.begin(115200);
@@ -334,8 +387,9 @@ void setup() {
   Serial.println("BLE mouse demo.");
 
   // Open debugger, must befor init().
-//  ble.debugLogger(true);
-//  ble.debugError(true);
+    ble.debugLogger(true);
+    ble.debugError(true);
+    ble.debugInfo(true);
 //  ble.enablePacketLogger();
     
   // Initialize ble_stack.
@@ -353,20 +407,31 @@ void setup() {
   ble.addCharacteristic(BLE_UUID_GAP_CHARACTERISTIC_APPEARANCE, ATT_PROPERTY_READ, appearance, sizeof(appearance));
   ble.addCharacteristic(BLE_UUID_GAP_CHARACTERISTIC_PPCP, ATT_PROPERTY_READ, conn_param, sizeof(conn_param));
 
-//  // Add GATT service and characteristics
-//  ble.addService(BLE_UUID_GATT);
-//  ble.addCharacteristic(BLE_UUID_GATT_CHARACTERISTIC_SERVICE_CHANGED, ATT_PROPERTY_INDICATE, change, sizeof(change));
-//
-//  // Add primary service1.
-//  ble.addService(service1_uuid);
-//  // Add characteristic to service1, return value handle of characteristic.
-//  character1_handle = ble.addCharacteristicDynamic(char1_uuid, ATT_PROPERTY_NOTIFY|ATT_PROPERTY_WRITE_WITHOUT_RESPONSE, characteristic1_data, CHARACTERISTIC1_MAX_LEN);
-//  character2_handle = ble.addCharacteristicDynamic(char2_uuid, ATT_PROPERTY_READ|ATT_PROPERTY_NOTIFY, characteristic2_data, CHARACTERISTIC2_MAX_LEN);
-//  
-//  // Add primary sevice2.
-//  ble.addService(service2_uuid);
-//  character3_handle = ble.addCharacteristic(char3_uuid, ATT_PROPERTY_READ, characteristic3_data, CHARACTERISTIC3_MAX_LEN);
+  // Add GATT service and characteristics
+  ble.addService(BLE_UUID_GATT);
+  ble.addCharacteristic(BLE_UUID_GATT_CHARACTERISTIC_SERVICE_CHANGED, ATT_PROPERTY_INDICATE, change, sizeof(change));
 
+  // Add primary Battery service.
+  ble.addService(battery_service_uuid);
+  // Add battery level characteristic to battery service, return value handle of characteristic.
+  battery_level_characteristic_handle = ble.addCharacteristicDynamic(battery_level_characteristic_uuid, ATT_PROPERTY_READ, battery_level_characteristic_data, BATTERY_LEVEL_CHARACTERISTIC_MAX_LEN);
+
+  // Add primary Device Information service.
+  ble.addService(device_information_service_uuid);
+  // Add PNP ID characteristic to device infortation service, return value handle of characteristic.
+  pnp_id_characteristic_handle = ble.addCharacteristicDynamic(pnp_id_characteristic_uuid, ATT_PROPERTY_READ, pnp_id_characteristic_data, PNP_ID_CHARACTERISTIC_MAX_LEN);
+
+  // Add primary HID service.
+  ble.addService(hid_service_uuid);
+  // Add HID information characteristic to HID service, return value handle of characteristic.
+  hid_information_characteristic_handle = ble.addCharacteristicDynamic(hid_information_characteristic_uuid, ATT_PROPERTY_READ, hid_information_characteristic_data, HID_INFORMATION_CHARACTERISTIC_MAX_LEN);
+  // Add HID control point characteristic to HID service, return value handle of characteristic.
+  hid_control_point_characteristic_handle = ble.addCharacteristicDynamic(hid_control_point_characteristic_uuid, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE, hid_control_point_characteristic_data, HID_CONTROL_POINT_CHARACTERISTIC_MAX_LEN);
+  // Add report map characteristic to HID service, return value handle of characteristic.
+  report_map_characteristic_handle = ble.addCharacteristicDynamic(report_map_characteristic_uuid, ATT_PROPERTY_READ, report_map_characteristic_data, REPORT_MAP_VALUE_CHARACTERISTIC_MAX_LEN);
+  // Add mouse input report characteristic to HID service, return value handle of characteristic.
+  mouse_input_report_characteristic_handle = ble.addCharacteristicDynamic(mouse_input_report_characteristic_uuid, ATT_PROPERTY_READ | ATT_PROPERTY_NOTIFY, mouse_input_report_characteristic_data, BOOT_MOUSE_INPUT_REPORT_CHARACTERISTIC_MAX_LEN);
+  
   // Set BLE advertising parameters
   ble.setAdvertisementParams(&adv_params);
 
@@ -379,14 +444,14 @@ void setup() {
   Serial.println("BLE start advertising.");
     
 //  // set one-shot timer
-//  characteristic2.process = &characteristic2_notify;
-//  ble.setTimer(&characteristic2, 10000);
-//  ble.addTimer(&characteristic2);
+//  mouse_input_report_characteristic.process = &mouse_input_report_characteristic_notify;
+//  ble.setTimer(&mouse_input_report_characteristic, 10000);
+//  ble.addTimer(&mouse_input_report_characteristic);
 }
 
 
 void loop() {
   // put your main code here, to run repeatedly:
-  delay(5000);
-  Serial.println("BLE mouse demo.");
+//  delay(5000);
+//  Serial.println("BLE mouse demo.");
 }
